@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tung Chung and Sha Lo Wan photo archive: Box B23</title>
+<link rel="stylesheet" href="css/leaflet.css">
+<link rel="stylesheet" href="css/MarkerCluster.css">
+<style>
+:root{
+  --sea:#0E3A40; --sea-2:#1A4F56; --sea-3:#2C666E; --on-sea:#E9F3F1; --on-sea-2:#B5CFCC;
+  --foam:#F1F6F5; --white:#FFFFFF; --ink:#142A2D; --ink-2:#4B6165; --rule:#CCDBD8;
+  --high:#2B63B8; --medium:#E07B26; --low:#AEB9BB;
+  --serif:"Songti TC","Noto Serif TC","Source Han Serif TC","PMingLiU",Georgia,serif;
+  --sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:15px/1.5 var(--sans);color:var(--ink);background:var(--foam);display:grid;grid-template-rows:auto minmax(0,1fr);height:100dvh}
+button,input{font:inherit}
+:focus-visible{outline:3px solid #F2C14E;outline-offset:2px}
+
+.top{background:var(--sea);color:var(--on-sea);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--sea-3)}
+.top h1{font:600 22px/1.2 var(--serif);margin:0}
+.top p{margin:2px 0 0;color:var(--on-sea-2);font-size:13.5px}
+.btn-about{flex:none;background:transparent;color:var(--on-sea);border:1px solid var(--on-sea-2);border-radius:4px;padding:7px 14px;cursor:pointer}
+.btn-about:hover{background:var(--sea-2)}
+
+.layout{display:grid;grid-template-columns:286px minmax(0,1fr) 410px;min-height:0}
+
+/* left: browse */
+.browse{background:var(--sea);color:var(--on-sea);overflow-y:auto;padding:16px 18px 24px}
+.shown{font:600 19px/1.25 var(--serif);margin:0 0 12px}
+.facet{border:0;padding:0;margin:0 0 16px}
+.facet legend{padding:0;font-weight:600;margin-bottom:5px}
+.opt{display:flex;align-items:flex-start;gap:8px;padding:3px 0;cursor:pointer;line-height:1.3}
+.opt input{margin:2px 0 0;accent-color:#7FC4BC;flex:none;width:15px;height:15px}
+.opt .n{margin-left:auto;color:var(--on-sea-2);font-size:13px;padding-left:8px}
+.opt small{display:block;color:var(--on-sea-2);font-size:12.5px;line-height:1.35}
+.dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:3px;border:1.5px solid #fff}
+.dot.High{background:var(--high)}.dot.Medium{background:var(--medium)}.dot.Low{background:var(--low)}.dot.Unknown{background:transparent;border-style:dashed}
+.actions{display:flex;gap:8px;margin:0 0 18px}
+.actions button{flex:1;background:var(--sea-2);color:var(--on-sea);border:1px solid var(--sea-3);border-radius:4px;padding:5px 0;cursor:pointer}
+.actions button:hover{background:var(--sea-3)}
+.list-title{font-weight:600;margin:0 0 5px;padding-top:14px;border-top:1px solid var(--sea-3)}
+.plist{list-style:none;margin:0;padding:0}
+.plist button{width:100%;display:flex;gap:8px;align-items:flex-start;text-align:left;background:none;color:inherit;border:0;border-radius:4px;padding:5px 6px;margin-left:-6px;cursor:pointer;line-height:1.3}
+.plist button:hover{background:var(--sea-2)}
+.plist button[aria-current=true]{background:var(--on-sea);color:var(--ink)}
+.plist button[aria-current=true] small{color:var(--ink-2)}
+.plist small{display:block;color:var(--on-sea-2);font-size:12.5px}
+.none{color:var(--on-sea-2);margin:6px 0}
+
+/* centre: map */
+.mapwrap{position:relative;min-height:0;background:#27474C}
+#map{position:absolute;inset:0}
+.pane-box{position:absolute;z-index:800;background:var(--white);border:1px solid var(--rule);border-radius:6px;box-shadow:0 2px 10px rgba(14,58,64,.28)}
+.layers{top:12px;right:12px;padding:10px 13px;width:238px;font-size:14px}
+.layers h2{font-size:14px;font-weight:600;margin:0 0 2px}
+.layers h2+label{margin-top:0}
+.layers label{display:flex;gap:7px;align-items:center;padding:2px 0;cursor:pointer;line-height:1.3}
+.layers .sep{height:9px}
+.fade{left:50%;transform:translateX(-50%);bottom:30px;width:min(470px,calc(100% - 28px));background:var(--sea);border-color:var(--sea-3);color:var(--on-sea);padding:10px 16px 11px}
+.fade .row{display:flex;align-items:center;gap:12px}
+.fade span{font:600 16px/1 var(--serif);white-space:nowrap}
+.fade input{flex:1;min-width:0;accent-color:#F2C14E;height:22px;cursor:pointer}
+.fade input:disabled{opacity:.4;cursor:not-allowed}
+.fade p{margin:4px 0 0;text-align:center;font-size:13px;color:var(--on-sea-2)}
+.leaflet-container{font-family:var(--sans)}
+.leaflet-control-attribution{font-size:11px}
+
+/* clusters: ring shows the mix of certainty inside */
+.pie{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;box-shadow:0 1px 6px rgba(0,0,0,.55)}
+.pie b{width:29px;height:29px;border-radius:50%;background:#fff;color:var(--ink);display:grid;place-items:center;font:700 14px/1 var(--sans)}
+
+/* right: record */
+.record{background:var(--white);overflow-y:auto;border-left:1px solid var(--rule)}
+.empty{padding:26px 24px}
+.empty h2{font:600 21px/1.3 var(--serif);margin:0 0 8px}
+.empty p{margin:0 0 12px;max-width:40ch;color:var(--ink-2)}
+.bars{margin-top:18px}
+.bar{display:grid;grid-template-columns:66px 1fr 28px;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.bar i{display:block;height:11px;border-radius:2px}
+.bar .track{background:var(--foam);border-radius:2px}
+.frame{background:#10272A;display:flex;align-items:center;justify-content:center;min-height:210px}
+.frame a{display:block;line-height:0}
+.frame img{display:block;max-width:100%;max-height:48vh;width:auto;height:auto}
+.frame .err{color:#fff;padding:22px;line-height:1.45;font-size:14px}
+.frame .err code{word-break:break-all;color:#F2C14E}
+.rec-head{padding:14px 22px 2px}
+.rec-head h2{font:600 24px/1.2 var(--serif);margin:0}
+.rec-head p{margin:2px 0 0;color:var(--ink-2)}
+.nav{display:flex;gap:8px;padding:8px 22px 0}
+.nav button{background:var(--foam);border:1px solid var(--rule);border-radius:4px;padding:4px 12px;cursor:pointer;color:var(--ink)}
+.nav button:disabled{opacity:.45;cursor:default}
+.badge{margin:12px 22px 0;padding:9px 12px;border-left:5px solid var(--ink-2);background:var(--foam);font-size:14px;line-height:1.4}
+.badge.High{border-color:var(--high)}.badge.Medium{border-color:var(--medium)}.badge.Low{border-color:var(--low)}
+.meta{margin:8px 22px 28px}
+.meta div{display:grid;grid-template-columns:112px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--foam)}
+.meta dt{color:var(--ink-2);font-size:13.5px}
+.meta dd{margin:0;overflow-wrap:anywhere;line-height:1.5}
+
+/* about */
+dialog{border:0;border-radius:8px;padding:0;width:min(760px,calc(100vw - 28px));max-height:calc(100dvh - 40px);color:var(--ink);box-shadow:0 12px 50px rgba(0,0,0,.45)}
+dialog::backdrop{background:rgba(10,38,42,.65)}
+.about{padding:24px 30px 30px}
+.about-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.about h2{font:600 24px/1.25 var(--serif);margin:0}
+.about h3{font:600 17px/1.3 var(--serif);margin:22px 0 6px}
+.about p,.about li{max-width:68ch}
+.about p{margin:0 0 9px}.about ul{margin:0 0 9px;padding-left:20px}
+.about table{border-collapse:collapse;width:100%;font-size:14px;margin:4px 0 8px}
+.about th,.about td{border-bottom:1px solid var(--rule);text-align:left;padding:6px 8px 6px 0;vertical-align:top}
+.close{background:var(--foam);border:1px solid var(--rule);border-radius:4px;padding:5px 12px;cursor:pointer}
+.todo{background:#FFE9A8;padding:0 3px;border-radius:2px}
+
+@media (max-width:1180px){.layout{grid-template-columns:250px minmax(0,1fr) 340px}}
+@media (max-width:900px){
+  body{display:block;height:auto}
+  .layout{display:flex;flex-direction:column}
+  .mapwrap{order:1;height:62vh}
+  .record{order:2;overflow:visible;border-left:0}
+  .browse{order:3;overflow:visible;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+  .layers{width:190px;font-size:13px;padding:8px 10px}
+  .fade{bottom:24px;padding:8px 12px}
+  .fade p{display:none}
+  .top h1{font-size:19px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Tung Chung and Sha Lo Wan photo archive</h1>
+    <p>Box B23: 36 field photographs from 2004, placed on the map with their location evidence</p>
+  </div>
+  <button class="btn-about" id="openAbout" type="button">About this archive</button>
+</header>
+
+<div class="layout">
+  <aside class="browse" aria-label="Browse photographs">
+    <p class="shown" id="shown" aria-live="polite"></p>
+    <div id="facets"></div>
+    <div class="actions">
+      <button type="button" id="selAll">Select all</button>
+      <button type="button" id="selNone">Clear</button>
+    </div>
+    <p class="list-title">Photographs</p>
+    <ul class="plist" id="plist"></ul>
+    <div id="unmappedWrap" hidden>
+      <p class="list-title">Not on the map</p>
+      <ul class="plist" id="ulist"></ul>
+    </div>
+  </aside>
+
+  <main class="mapwrap">
+    <div id="map"></div>
+    <div class="pane-box layers" id="layerBox">
+      <h2>Present-day background</h2>
+      <label><input type="radio" name="bg" value="imagery" checked> Modern imagery</label>
+      <label><input type="radio" name="bg" value="hkms"> HKMS map (2026)</label>
+      <div class="sep"></div>
+      <h2>2004 aerial photos</h2>
+      <label><input type="checkbox" id="aTC" checked> Tung Chung</label>
+      <label><input type="checkbox" id="aSLW" checked> Sha Lo Wan</label>
+    </div>
+    <div class="pane-box fade" id="fadeBox">
+      <div class="row">
+        <span>Today</span>
+        <input type="range" id="fade" min="0" max="100" value="100" aria-label="Fade between the present-day background and the 2004 aerial photos">
+        <span>2004</span>
+      </div>
+      <p>Drag to fade the 2004 aerial photos over the present-day background</p>
+    </div>
+  </main>
+
+  <section class="record" id="record" aria-live="polite" aria-label="Photograph record"></section>
+</div>
+
+<dialog id="about" aria-labelledby="aboutTitle">
+<div class="about">
+  <div class="about-top">
+    <h2 id="aboutTitle">About this archive</h2>
+    <button class="close" id="closeAbout" type="button">Close</button>
+  </div>
+
+  <!-- EDIT THE ABOUT TEXT BELOW. Replace every yellow "To add" item before you publish. -->
+  <p>This site maps every photograph in Box B23: 36 field photographs from 2004, covering villages in Tung Chung Valley, Ma Wan Chung and Sha Lo Wan on Lantau Island. Made for ANTH 3323B Digital Humanities, Module 1, by LUN Kam Wing, Rain.</p>
+
+  <h3>How certain each location is</h3>
+  <table id="certTable"><thead><tr><th>Level</th><th>What it means</th><th>Photographs</th></tr></thead><tbody></tbody></table>
+  <p id="unknownNote"></p>
+  <p>A point is an estimate, even when its coordinates look exact. Each record says what its point marks: the estimated camera position, the photographed subject, or only the general area. Many Low points share one village reference point and don’t show where the photographer stood.</p>
+
+  <h3>How the map was made</h3>
+  <ul>
+    <li>Locations came from the archive captions, Google Map and satellite comparison, the HKMS map and the aerial photos. Each record lists its method and evidence.</li>
+    <li>Aerial photos were georeferenced in QGIS with a first-order polynomial to Hong Kong 1980 Grid (EPSG:2326). Point coordinates are stored in WGS 84 (EPSG:4326).</li>
+    <li>Sha Lo Wan: aerial photo CW59283, 27 September 2004, flying height 4,000 ft. 7 control points, mean error 6.43621 pixels.</li>
+    <li>Tung Chung: aerial photo CW55194, 10 February 2004 (printed 10.2.2004), flying height 8,000 ft. 6 control points, mean error 6.88234 pixels.</li>
+  </ul>
+
+  <h3>Then and now</h3>
+  <table>
+    <tr><th>Location</th><td>The sea just north of Sha Lo Wan</td></tr>
+    <tr><th>Past</th><td>Aerial photo CW59283 (27 September 2004)</td></tr>
+    <tr><th>Now</th><td>HKMS map (2026)</td></tr>
+    <tr><th>Observed change</th><td>The HKMS map shows a major road crossing the sea north of Sha Lo Wan. The same stretch of sea on the full aerial photo shows no road.</td></tr>
+    <tr><th>Interpretation</th><td>This is probably the Hong Kong Link Road of the Hong Kong-Zhuhai-Macao Bridge, which opened on 24 October 2018 (Highways Department). If so, the road was built after the aerial photo was taken.</td></tr>
+  </table>
+  <table>
+    <tr><th>Location</th><td>The 芳園 point (P07), Tung Chung Valley</td></tr>
+    <tr><th>Past</th><td>Aerial photo CW55194 (10 February 2004) and field photograph P07 (2004)</td></tr>
+    <tr><th>Now</th><td>Modern imagery (Lands Department; capture date not stated)</td></tr>
+    <tr><th>Observed change</th><td>At this point, the 2004 aerial photo appears to show forest, while the modern imagery shows a temple.</td></tr>
+    <tr><th>Interpretation</th><td>This doesn’t show that the temple is new. Field photograph P07 already shows a temple in 2004, so tree cover or the aerial photo’s clarity may hide it. The point is also approximate.</td></tr>
+  </table>
+
+  <h3>Limitations</h3>
+  <ul>
+    <li id="lowNote"></li>
+    <li id="missingNote" hidden>The image file for B23P10 is missing from the working copy of Box B23. Its record stays in the archive, based on the existing notes, but its subject couldn’t be rechecked against the photograph.</li>
+    <li>The aerial photos only cover the areas around the mapped photographs. Elsewhere you see the present-day background.</li>
+    <li>The aerial photos date from February and September 2004, while the field photographs are recorded as June 2004, so they may not show identical conditions.</li>
+    <li>Each aerial photo was aligned with only 6 or 7 control points, so its fit may be weaker away from those points. Use it for comparing landscapes, not for exact measurement.</li>
+    <li>The capture date of the modern imagery isn’t stated in its documentation, so “today” means the current service, not a known date.</li>
+    <li>Maps and photographs show different things. A feature missing from a map may still have existed on the ground.</li>
+  </ul>
+
+  <h3>Use of AI</h3>
+  <p>Claude helped with QGIS troubleshooting and converted text to Traditional Chinese. It also drafted the <code>Primary_Subject</code> and <code>Point_Represents</code> values from the photo notes, edited the data table and wrote the interface code for this page. No coordinates were changed by AI. The subject values were then checked against the photographs and corrected where needed.</p>
+
+  <h3>Sources and credits</h3>
+  <ul>
+    <li>Field photographs: Box B23, assigned for ANTH 3323B.</li>
+    <li>Aerial photographs are marked “Copyright reserved - reproduction by permission only” by the Survey &amp; Mapping Office, Lands Department, and are shown here for coursework.</li>
+    <li>Map from Lands Department. Aerial Photograph from Lands Department. The Government of the HKSAR owns the copyright in this map information.</li>
+    <li>Guangdong-Hong Kong-Macao Greater Bay Area Satellite Image 2024 (Satellite Images from Landsat). Pan-Pearl River Delta Satellite Image 2016 (Satellite Images from Landsat). Globe Satellite Image 2001 (Satellite Images from MODIS).</li>
+    <li>Built with QGIS, qgis2web, Leaflet and Leaflet.markercluster.</li>
+  </ul>
+</div>
+</dialog>
+
+<script src="js/leaflet.js"></script>
+<script src="js/leaflet.markercluster.js"></script>
+<script src="data/photoexcelfinal_7.js"></script>
+<script>
+var map = L.map('map', {zoomControl:false, maxZoom:20, minZoom:10, attributionControl:true});
+L.control.zoom({position:'topleft'}).addTo(map);
+map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+map.attributionControl.addAttribution('Map and aerial photographs from Lands Department; satellite images from Landsat');
+
+/* ---------- layers exported by qgis2web (bounds unchanged) ---------- */
+map.createPane('pane_HKMSmap2026iB5000_9SEA_TIFF_0');
+map.getPane('pane_HKMSmap2026iB5000_9SEA_TIFF_0').style.zIndex = 400;
+var img_HKMSmap2026iB5000_9SEA_TIFF_0 = 'data/HKMSmap2026iB5000_9SEA_TIFF_0.png';
+var img_bounds_HKMSmap2026iB5000_9SEA_TIFF_0 = [[22.273607952312364,113.89769308407159],[22.300758044667496,113.93413201704129]];
+var layer_HKMSmap2026iB5000_9SEA_TIFF_0 = new L.imageOverlay(img_HKMSmap2026iB5000_9SEA_TIFF_0,
+img_bounds_HKMSmap2026iB5000_9SEA_TIFF_0,
+{pane: 'pane_HKMSmap2026iB5000_9SEA_TIFF_0'});
+map.createPane('pane_HKMSmap2026iB5000_9SEB_TIFF_1');
+map.getPane('pane_HKMSmap2026iB5000_9SEB_TIFF_1').style.zIndex = 401;
+var img_HKMSmap2026iB5000_9SEB_TIFF_1 = 'data/HKMSmap2026iB5000_9SEB_TIFF_1.png';
+var img_bounds_HKMSmap2026iB5000_9SEB_TIFF_1 = [[22.273666401328807,113.93408524462212],[22.300808410150857,113.9705172786357]];
+var layer_HKMSmap2026iB5000_9SEB_TIFF_1 = new L.imageOverlay(img_HKMSmap2026iB5000_9SEB_TIFF_1,
+img_bounds_HKMSmap2026iB5000_9SEB_TIFF_1,
+{pane: 'pane_HKMSmap2026iB5000_9SEB_TIFF_1'});
+map.createPane('pane_HKMSmap2026iB5000_9SEC_TIFF_2');
+map.getPane('pane_HKMSmap2026iB5000_9SEC_TIFF_2').style.zIndex = 402;
+var img_HKMSmap2026iB5000_9SEC_TIFF_2 = 'data/HKMSmap2026iB5000_9SEC_TIFF_2.png';
+var img_bounds_HKMSmap2026iB5000_9SEC_TIFF_2 = [[22.246516297786957,113.89774686844221],[22.273666401328807,113.93417871714662]];
+var layer_HKMSmap2026iB5000_9SEC_TIFF_2 = new L.imageOverlay(img_HKMSmap2026iB5000_9SEC_TIFF_2,
+img_bounds_HKMSmap2026iB5000_9SEC_TIFF_2,
+{pane: 'pane_HKMSmap2026iB5000_9SEC_TIFF_2'});
+map.createPane('pane_HKMSmap2026iB5000_9SED_TIFFtif_3');
+map.getPane('pane_HKMSmap2026iB5000_9SED_TIFFtif_3').style.zIndex = 403;
+var img_HKMSmap2026iB5000_9SED_TIFFtif_3 = 'data/HKMSmap2026iB5000_9SED_TIFFtif_3.png';
+var img_bounds_HKMSmap2026iB5000_9SED_TIFFtif_3 = [[22.246574667863168,113.93413201704129],[22.27371669879668,113.97055697747854]];
+var layer_HKMSmap2026iB5000_9SED_TIFFtif_3 = new L.imageOverlay(img_HKMSmap2026iB5000_9SED_TIFFtif_3,
+img_bounds_HKMSmap2026iB5000_9SED_TIFFtif_3,
+{pane: 'pane_HKMSmap2026iB5000_9SED_TIFFtif_3'});
+map.createPane('pane_ModernimageryLandsDepartment_4');
+map.getPane('pane_ModernimageryLandsDepartment_4').style.zIndex = 404;
+var layer_ModernimageryLandsDepartment_4 = L.tileLayer('https://mapapi.hkmapservice.gov.hk/gs/api/v1.0.0/xyz/imagery/WGS84/{z}/{x}/{y}.png', {
+pane: 'pane_ModernimageryLandsDepartment_4',
+opacity: 1.0,
+attribution: '',
+minZoom: 1,
+maxZoom: 28,
+minNativeZoom: 0,
+maxNativeZoom: 20
+});
+map.createPane('pane_Aerialphoto2004ShaLoWan_5');
+map.getPane('pane_Aerialphoto2004ShaLoWan_5').style.zIndex = 405;
+var img_Aerialphoto2004ShaLoWan_5 = 'data/Aerialphoto2004ShaLoWan_5.png';
+var img_bounds_Aerialphoto2004ShaLoWan_5 = [[22.283210504771837,113.89758739496115],[22.29195589972346,113.90623992406105]];
+var layer_Aerialphoto2004ShaLoWan_5 = new L.imageOverlay(img_Aerialphoto2004ShaLoWan_5,
+img_bounds_Aerialphoto2004ShaLoWan_5,
+{pane: 'pane_Aerialphoto2004ShaLoWan_5'});
+map.createPane('pane_Aerialphoto2004TungChung_6');
+map.getPane('pane_Aerialphoto2004TungChung_6').style.zIndex = 406;
+var img_Aerialphoto2004TungChung_6 = 'data/Aerialphoto2004TungChung_6.png';
+var img_bounds_Aerialphoto2004TungChung_6 = [[22.265056143514926,113.9268974580486],[22.290725533341757,113.94696254156541]];
+var layer_Aerialphoto2004TungChung_6 = new L.imageOverlay(img_Aerialphoto2004TungChung_6,
+img_bounds_Aerialphoto2004TungChung_6,
+{pane: 'pane_Aerialphoto2004TungChung_6'});
+
+/* ---------- background and then/now controls ---------- */
+var hkms = L.layerGroup([layer_HKMSmap2026iB5000_9SEA_TIFF_0, layer_HKMSmap2026iB5000_9SEB_TIFF_1, layer_HKMSmap2026iB5000_9SEC_TIFF_2, layer_HKMSmap2026iB5000_9SED_TIFFtif_3]);
+var imagery = layer_ModernimageryLandsDepartment_4;
+var aerialTC = layer_Aerialphoto2004TungChung_6, aerialSLW = layer_Aerialphoto2004ShaLoWan_5;
+imagery.addTo(map); aerialTC.addTo(map); aerialSLW.addTo(map);
+
+['layerBox','fadeBox'].forEach(function(id){
+  var el = document.getElementById(id);
+  L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el);
+});
+document.querySelectorAll('input[name=bg]').forEach(function(r){
+  r.addEventListener('change', function(){
+    if (r.value === 'hkms' && r.checked){ map.removeLayer(imagery); hkms.addTo(map); }
+    if (r.value === 'imagery' && r.checked){ map.removeLayer(hkms); imagery.addTo(map); }
+  });
+});
+var fade = document.getElementById('fade');
+function applyFade(){ var o = fade.value/100; aerialTC.setOpacity(o); aerialSLW.setOpacity(o); }
+fade.addEventListener('input', applyFade);
+function toggleAerial(box, layer){
+  box.addEventListener('change', function(){
+    if (box.checked){ layer.addTo(map); applyFade(); } else { map.removeLayer(layer); }
+    fade.disabled = !(document.getElementById('aTC').checked || document.getElementById('aSLW').checked);
+  });
+}
+toggleAerial(document.getElementById('aTC'), aerialTC);
+toggleAerial(document.getElementById('aSLW'), aerialSLW);
+
+/* ---------- photo records ---------- */
+/* Corrections made after the qgis2web export. Keep these in step with data/photos.csv. */
+var CORRECTIONS = {
+  B23P18: {Location_Certainty:'High', Location_Method:'Map comparison by the student; landmark: 寶安橋石碑'},
+  B23P10: {Image_Path:'B23P10.jpg'},
+  B23P11: {Primary_Subject:'house'},
+  B23P15: {Primary_Subject:'house', Notes:'原始標註為舊診所；檢查照片後，主題欄改為 house。'},
+  B23P17: {Primary_Subject:'pier'},
+  B23P20: {Primary_Subject:'bridge', Notes:'none'},
+  B23P22: {Primary_Subject:'bridge'}
+};
+json_photoexcelfinal_7.features.forEach(function(f){
+  var fix = CORRECTIONS[f.properties.Photo_ID];
+  if (fix) Object.keys(fix).forEach(function(k){ f.properties[k] = fix[k]; });
+});
+var COLORS = {High:'#2B63B8', Medium:'#E07B26', Low:'#AEB9BB', Unknown:'#FFFFFF'};
+var LEVELS = ['High','Medium','Low','Unknown'];
+var MEANING = {
+  High:'Confirmed by recognisable landmarks and a matching viewpoint.',
+  Medium:'Village or place identified; camera position inferred.',
+  Low:'General area known; precise point uncertain.',
+  Unknown:'Cannot be mapped responsibly.'
+};
+var MARKS = {
+  camera:'The estimated camera position',
+  subject:'The photographed subject',
+  'general area':'The general area, not the camera position'
+};
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function val(p,k){ var v = p[k]; if (v === undefined) v = p['q2wHide_'+k]; return (v === null || v === undefined) ? '' : String(v).trim(); }
+function imgSrc(path){ return 'images/' + String(path).replace(/[\\/:]/g,'_').trim(); }
+
+map.createPane('photoPoints').style.zIndex = 650;
+var cluster = L.markerClusterGroup({
+  showCoverageOnHover:false, maxClusterRadius:42, spiderfyDistanceMultiplier:1.8,
+  spiderLegPolylineOptions:{weight:1.5, color:'#FFFFFF', opacity:0.85, pane:'photoPoints'},
+  iconCreateFunction:function(c){
+    var counts = {High:0,Medium:0,Low:0,Unknown:0}, all = c.getAllChildMarkers(), at = 0, stops = [];
+    all.forEach(function(m){ counts[m.options.certainty] = (counts[m.options.certainty]||0)+1; });
+    LEVELS.forEach(function(l){
+      if (!counts[l]) return;
+      var next = at + counts[l]/all.length*360;
+      stops.push(COLORS[l]+' '+at.toFixed(1)+'deg '+next.toFixed(1)+'deg'); at = next;
+    });
+    return L.divIcon({className:'', iconSize:[44,44],
+      html:'<div class="pie" style="background:conic-gradient('+stops.join(',')+')"><b>'+all.length+'</b></div>'});
+  }
+});
+function baseStyle(level){
+  return {pane:'photoPoints', radius:8, weight:2, color:'#FFFFFF', fillColor:COLORS[level]||COLORS.Unknown, fillOpacity:level==='Low'?0.72:1, opacity:1, certainty:level};
+}
+var records = json_photoexcelfinal_7.features.map(function(f){
+  var p = f.properties, level = val(p,'Location_Certainty');
+  if (LEVELS.indexOf(level) < 0) level = 'Unknown';
+  var rec = {p:p, id:val(p,'Photo_ID'), level:level, village:val(p,'Village'), villageEN:val(p,'Village_EN'), subject:val(p,'Primary_Subject')||'unknown (not recorded)', marker:null};
+  var g = f.geometry;
+  if (g && g.type === 'Point' && val(p,'Mapped').toLowerCase() !== 'no'){
+    rec.marker = L.circleMarker([g.coordinates[1], g.coordinates[0]], baseStyle(level));
+    rec.marker.on('click', function(){ select(rec); });
+  }
+  return rec;
+}).sort(function(a,b){ return a.id < b.id ? -1 : 1; });
+
+/* ---------- filters ---------- */
+function uniq(fn){ var seen = []; records.forEach(function(r){ var v = fn(r); if (seen.indexOf(v) < 0) seen.push(v); }); return seen; }
+function count(fn,v){ return records.filter(function(r){ return fn(r) === v; }).length; }
+var enOf = {}; records.forEach(function(r){ if (!enOf[r.village]) enOf[r.village] = r.villageEN; });
+var FACETS = [
+  {key:'level', title:'Location certainty', values:LEVELS.filter(function(l){ return records.some(function(r){ return r.level === l; }); })},
+  {key:'village', title:'Place', values:uniq(function(r){ return r.village; })},
+  {key:'subject', title:'Subject', values:uniq(function(r){ return r.subject; }).sort()}
+];
+var facetsEl = document.getElementById('facets');
+FACETS.forEach(function(F){
+  var fs = document.createElement('fieldset'); fs.className = 'facet';
+  var html = '<legend>'+F.title+'</legend>';
+  F.values.forEach(function(v){
+    var label = esc(v);
+    if (F.key === 'level') label = '<span class="dot '+esc(v)+'"></span><span>'+esc(v)+'<small>'+esc(MEANING[v])+'</small></span>';
+    if (F.key === 'village') label = '<span>'+esc(v)+(enOf[v] ? '<small>'+esc(enOf[v])+'</small>' : '')+'</span>';
+    html += '<label class="opt"><input type="checkbox" checked data-key="'+F.key+'" value="'+esc(v)+'">'+label+
+            '<span class="n">'+count(function(r){ return r[F.key]; }, v)+'</span></label>';
+  });
+  fs.innerHTML = html; facetsEl.appendChild(fs);
+});
+var boxes = Array.prototype.slice.call(facetsEl.querySelectorAll('input'));
+boxes.forEach(function(b){ b.addEventListener('change', applyFilters); });
+document.getElementById('selAll').onclick = function(){ boxes.forEach(function(b){ b.checked = true; }); applyFilters(); };
+document.getElementById('selNone').onclick = function(){ boxes.forEach(function(b){ b.checked = false; }); applyFilters(); };
+
+var visible = [], current = null;
+function applyFilters(){
+  var on = {level:[],village:[],subject:[]};
+  boxes.forEach(function(b){ if (b.checked) on[b.dataset.key].push(b.value); });
+  visible = records.filter(function(r){
+    return on.level.indexOf(r.level) >= 0 && on.village.indexOf(r.village) >= 0 && on.subject.indexOf(r.subject) >= 0;
+  });
+  cluster.clearLayers();
+  cluster.addLayers(visible.filter(function(r){ return r.marker; }).map(function(r){ return r.marker; }));
+  document.getElementById('shown').textContent = visible.length + ' of ' + records.length + ' photographs shown';
+  renderList();
+  if (current && visible.indexOf(current) < 0) select(null);
+}
+function itemHTML(r){
+  return '<button type="button" data-id="'+esc(r.id)+'"'+(r===current?' aria-current="true"':'')+'><span class="dot '+esc(r.level)+'"></span><span>'+esc(r.id)+
+         '<small>'+esc(r.village)+'; '+esc(r.subject)+'</small></span></button>';
+}
+function renderList(){
+  var mapped = visible.filter(function(r){ return r.marker; }), un = visible.filter(function(r){ return !r.marker; });
+  document.getElementById('plist').innerHTML = mapped.length ? mapped.map(function(r){ return '<li>'+itemHTML(r)+'</li>'; }).join('')
+    : '<li class="none">No mapped photographs match. Tick more boxes, or choose Select all.</li>';
+  document.getElementById('ulist').innerHTML = un.map(function(r){ return '<li>'+itemHTML(r)+'</li>'; }).join('');
+  document.getElementById('unmappedWrap').hidden = !records.some(function(r){ return !r.marker; });
+}
+document.querySelector('.browse').addEventListener('click', function(e){
+  var b = e.target.closest('button[data-id]'); if (!b) return;
+  var r = records.filter(function(x){ return x.id === b.dataset.id; })[0];
+  if (r) select(r, true);
+});
+
+/* ---------- record panel ---------- */
+var panel = document.getElementById('record');
+function row(label, value){ return value ? '<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>' : ''; }
+function emptyPanel(){
+  var tot = records.length, bars = LEVELS.map(function(l){
+    var n = count(function(r){ return r.level; }, l); if (!n) return '';
+    return '<div class="bar"><span>'+l+'</span><span class="track"><i style="width:'+(n/tot*100)+'%;background:'+COLORS[l]+'"></i></span><span>'+n+'</span></div>';
+  }).join('');
+  panel.innerHTML = '<div class="empty"><h2>Choose a point on the map</h2><p>Click a point, or a photograph in the list, to see the picture and how its location was worked out.</p>'+
+    '<p>Numbered circles group nearby photographs. Their coloured ring shows the mix of certainty inside. Click one to zoom in.</p><div class="bars">'+bars+'</div></div>';
+}
+function select(rec, focus){
+  if (current && current.marker) current.marker.setStyle(baseStyle(current.level));
+  current = rec;
+  document.querySelectorAll('.plist button').forEach(function(b){
+    if (rec && b.dataset.id === rec.id) b.setAttribute('aria-current','true'); else b.removeAttribute('aria-current');
+  });
+  if (!rec){ emptyPanel(); return; }
+  if (rec.marker){
+    var hi = function(){ rec.marker.setStyle({radius:11, weight:4, color:'#F2C14E', fillOpacity:1}); if (rec.marker._map) rec.marker.bringToFront(); };
+    if (focus && cluster.hasLayer(rec.marker)){ cluster.zoomToShowLayer(rec.marker, hi); } else { hi(); }
+  }
+  var p = rec.p, path = val(p,'Image_Path'), src = path ? imgSrc(path) : '', i = visible.indexOf(rec);
+  var date = val(p,'Date') + (val(p,'date_certainty') ? ' ('+val(p,'date_certainty')+' certainty)' : '');
+  var notes = val(p,'Notes'); if (notes.toLowerCase() === 'none') notes = '';
+  panel.innerHTML =
+    '<div class="frame">'+(src ? '<a href="'+esc(encodeURI(src))+'" target="_blank" rel="noopener" title="Open the full-size photograph"><img alt="Photograph '+esc(rec.id)+': '+esc(val(p,'original_note'))+'" src="'+esc(encodeURI(src))+'"></a>' : '<p class="err">No photo path is recorded for '+esc(rec.id)+'.</p>')+'</div>'+
+    '<div class="rec-head"><h2>'+esc(rec.id)+'</h2><p>'+esc(rec.village)+(rec.villageEN ? ', '+esc(rec.villageEN) : '')+'</p></div>'+
+    '<div class="nav"><button type="button" id="prev"'+(i<=0?' disabled':'')+'>Previous</button><button type="button" id="next"'+(i<0||i>=visible.length-1?' disabled':'')+'>Next</button></div>'+
+    '<p class="badge '+esc(rec.level)+'"><strong>'+esc(rec.level)+' certainty.</strong> '+esc(MEANING[rec.level])+'</p>'+
+    '<dl class="meta">'+
+      row('Original caption', val(p,'original_note'))+
+      row('Date', date)+
+      row('Subject', rec.subject)+
+      row('View direction', val(p,'View_Direction'))+
+      row('This point marks', MARKS[val(p,'Point_Represents')] || val(p,'Point_Represents'))+
+      row('Located using', val(p,'Location_Method'))+
+      row('Location evidence', val(p,'Location_Note'))+
+      row('Box and negative', [val(p,'Box_No'), val(p,'Negative_No') && 'negative '+val(p,'Negative_No')].filter(Boolean).join(', '))+
+      row('Place ID', val(p,'Place_ID'))+
+      row('Notes', notes)+
+    '</dl>';
+  var img = panel.querySelector('img');
+  if (img) img.addEventListener('error', function(){
+    panel.querySelector('.frame').innerHTML = '<p class="err">The image file for '+esc(rec.id)+' is missing from this site. Its record and location evidence are still shown below.</p>';
+  });
+  var pv = document.getElementById('prev'), nx = document.getElementById('next');
+  if (pv) pv.onclick = function(){ select(visible[i-1], true); };
+  if (nx) nx.onclick = function(){ select(visible[i+1], true); };
+  panel.scrollTop = 0;
+}
+
+/* ---------- about ---------- */
+var tb = document.querySelector('#certTable tbody'), rowsHTML = '';
+LEVELS.forEach(function(l){
+  var n = count(function(r){ return r.level; }, l);
+  rowsHTML += '<tr><td>'+l+'</td><td>'+MEANING[l]+'</td><td>'+n+'</td></tr>';
+});
+tb.innerHTML = rowsHTML + '<tr><td><strong>Total</strong></td><td></td><td><strong>'+records.length+'</strong></td></tr>';
+var unknownN = count(function(r){ return r.level; }, 'Unknown');
+document.getElementById('unknownNote').textContent = unknownN === 0
+  ? 'No photograph is marked Unknown, because every caption names at least a place. All '+records.length+' can be reached from the map and the list.'
+  : unknownN+' photographs are marked Unknown. They stay in this archive, and you can open them from the list.';
+document.getElementById('lowNote').textContent = count(function(r){ return r.level; }, 'Low')+' of the '+records.length+' points are Low certainty, so they show a general area and can’t support exact spatial analysis.';
+var dlg = document.getElementById('about');
+document.getElementById('openAbout').onclick = function(){ dlg.showModal(); };
+document.getElementById('closeAbout').onclick = function(){ dlg.close(); };
+dlg.addEventListener('click', function(e){ if (e.target === dlg) dlg.close(); });
+
+/* The P10 limitation appears only while images/B23P10.jpg is missing. */
+var p10check = new Image();
+p10check.onerror = function(){ document.getElementById('missingNote').hidden = false; };
+p10check.src = 'images/B23P10.jpg';
+
+/* ---------- start ---------- */
+map.addLayer(cluster);
+applyFilters();
+emptyPanel();
+var pts = records.filter(function(r){ return r.marker; }).map(function(r){ return r.marker.getLatLng(); });
+if (pts.length) map.fitBounds(L.latLngBounds(pts), {padding:[70,70]}); else map.setView([22.28,113.92],13);
+</script>
+</body>
+</html>
